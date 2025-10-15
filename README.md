@@ -2,7 +2,9 @@
 
 Fast, local text-to-speech for macOS using Kokoro-82M. Type or paste text, press Cmd+Enter, and hear it spoken with natural pauses.
 
-https://github.com/ewernn/TTS-local-macos/raw/main/tts.mov
+
+https://github.com/user-attachments/assets/140979b4-1973-42b8-a066-1b9b3ab8fdc6
+
 
 ## Install
 
