@@ -9,6 +9,10 @@ https://github.com/user-attachments/assets/140979b4-1973-42b8-a066-1b9b3ab8fdc6
 ## Install
 
 ```bash
+# Clone the repo
+git clone https://github.com/ewernn/TTS-local-macos.git
+cd TTS-local-macos
+
 # Install dependencies
 brew install espeak-ng
 pip install kokoro soundfile
@@ -18,6 +22,14 @@ python3 speak.py
 ```
 
 That's it. First run downloads the model (~100MB).
+
+### Optional: Install as macOS App
+
+To add it to your dock/Applications:
+
+```bash
+./install.sh
+```
 
 ## Features
 
