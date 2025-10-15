@@ -150,9 +150,14 @@ def speak():
                 chunk_num = i + 1
                 button_canvas.itemconfig(button_text_sub, text=f"{chunk_num}/{len(chunks)}")
 
-                # Write and play audio
+                # Write and play audio with speed-scaled delay to prevent cutoff
+                # 0.0s at 1.2x speed, linearly scales to 1.0s at 2.0x speed
                 temp_file = f'/tmp/output_chunk_{i}.wav'
                 sf.write(temp_file, audio, 24000)
+                import time
+                if speed > 1.2:
+                    delay = (speed - 1.2) * (1.0 / (2.0 - 1.2))  # Linear scaling
+                    time.sleep(delay)
                 subprocess.run(['afplay', temp_file], check=True)
 
                 # Cleanup
@@ -184,11 +189,11 @@ class ModernSlider:
         self.callback = callback
         self.value_label = value_label
 
-        self.canvas = tk.Canvas(parent, width=120, height=20, bg=TEXT_BG, highlightthickness=0)
+        self.canvas = tk.Canvas(parent, width=90, height=20, bg=TEXT_BG, highlightthickness=0)
         self.canvas.pack()
 
         # Draw beam
-        self.beam = self.canvas.create_line(10, 10, 110, 10, fill=BORDER_COLOR, width=2)
+        self.beam = self.canvas.create_line(10, 10, 80, 10, fill=BORDER_COLOR, width=2)
 
         # Draw dot
         x = self.value_to_x(initial_value)
@@ -201,12 +206,12 @@ class ModernSlider:
         self.canvas.bind("<Leave>", self.on_leave)
 
     def value_to_x(self, value):
-        return 10 + (value - self.from_) / (self.to - self.from_) * 100
+        return 10 + (value - self.from_) / (self.to - self.from_) * 70
 
     def x_to_value(self, x):
         if x < 10: x = 10
-        if x > 110: x = 110
-        return self.from_ + (x - 10) / 100 * (self.to - self.from_)
+        if x > 80: x = 80
+        return self.from_ + (x - 10) / 70 * (self.to - self.from_)
 
     def on_click(self, event):
         self.update_value(event.x)
@@ -276,7 +281,9 @@ text_box = tk.Text(
     borderwidth=0,
     insertbackground=ACCENT_COLOR,
     padx=20,
-    pady=20
+    pady=20,
+    undo=True,
+    maxundo=-1
 )
 text_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -294,10 +301,10 @@ text_box.bind("<Command-Return>", on_cmd_enter)
 
 # Floating controls container (bottom-right)
 controls_frame = tk.Frame(root, bg=TEXT_BG)
-controls_frame.place(relx=1.0, rely=1.0, x=-30, y=-30, anchor="se")
+controls_frame.place(relx=1.0, rely=1.0, x=-20, y=-10, anchor="se")
 
 # Create floating button with canvas
-button_canvas = tk.Canvas(controls_frame, width=140, height=80, bg=TEXT_BG, highlightthickness=0)
+button_canvas = tk.Canvas(controls_frame, width=110, height=50, bg=TEXT_BG, highlightthickness=0)
 button_canvas.pack()
 
 def create_rounded_rect(x1, y1, x2, y2, radius, **kwargs):
@@ -325,13 +332,13 @@ def create_rounded_rect(x1, y1, x2, y2, radius, **kwargs):
     ]
     return button_canvas.create_polygon(points, smooth=True, **kwargs)
 
-button_rect = create_rounded_rect(0, 0, 140, 80, 20, fill=ACCENT_COLOR, outline="")
-button_text_main = button_canvas.create_text(70, 30, text="Speak", font=("Helvetica", 18, "bold"), fill="#FFFFFF")
-button_text_sub = button_canvas.create_text(70, 55, text="Kokoro-82M", font=("Helvetica", 10), fill="#FFFFFF")
+button_rect = create_rounded_rect(0, 0, 110, 50, 16, fill=ACCENT_COLOR, outline="")
+button_text_main = button_canvas.create_text(55, 18, text="Speak", font=("Helvetica", 16, "bold"), fill="#FFFFFF")
+button_text_sub = button_canvas.create_text(55, 36, text="Kokoro-82M", font=("Helvetica", 9), fill="#FFFFFF")
 
 # Speed slider below button (always visible, minimal)
 speed_container = tk.Frame(controls_frame, bg=TEXT_BG)
-speed_container.pack(pady=(10, 0))
+speed_container.pack(pady=(5, 0))
 
 def slider_callback(value):
     pass  # Speed updates handled in ModernSlider
@@ -342,11 +349,25 @@ speed_value_label = tk.Label(speed_container, text="", font=("Helvetica", 9), bg
 speed_slider = ModernSlider(speed_container, 0.5, 2.0, 1.2, slider_callback, speed_value_label)
 speed_value_label.pack()
 
+# Keyboard shortcut tooltip
+tooltip_label = None
+
 def on_button_enter(event):
+    global tooltip_label
     button_canvas.itemconfig(button_rect, fill=BUTTON_HOVER)
+    # Create tooltip showing keyboard shortcut above button
+    tooltip_label = tk.Label(root, text="⌘ + Enter", font=("Helvetica", 10),
+                            bg=SECONDARY_TEXT if DARK_MODE else "#4A4A4A",
+                            fg="#FFFFFF", padx=8, pady=4, relief=tk.FLAT)
+    tooltip_label.place(relx=1.0, rely=1.0, x=-75, y=-85, anchor="s")
 
 def on_button_leave(event):
+    global tooltip_label
     button_canvas.itemconfig(button_rect, fill=ACCENT_COLOR)
+    # Remove tooltip
+    if tooltip_label:
+        tooltip_label.destroy()
+        tooltip_label = None
 
 def on_button_click(event):
     speak()
