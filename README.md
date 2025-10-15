@@ -39,14 +39,80 @@ source tts-env/bin/activate
 pip install kokoro soundfile pillow
 ```
 
-5. **Create the app bundle** - see full instructions in repo
+5. **Create the app bundle**:
+```bash
+# Create directories
+mkdir -p ~/Applications/TextToSpeech.app/Contents/MacOS
+mkdir -p ~/Applications/TextToSpeech.app/Contents/Resources
+
+# Copy speak.py to the app (adjust path to your script location)
+cp speak.py ~/Applications/TextToSpeech.app/Contents/MacOS/
+
+# Create launcher script
+cat > ~/Applications/TextToSpeech.app/Contents/MacOS/TextToSpeech << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+/path/to/your/tts-env/bin/python3 speak.py
+EOF
+
+# Make executable
+chmod +x ~/Applications/TextToSpeech.app/Contents/MacOS/TextToSpeech
+
+# Create Info.plist
+cat > ~/Applications/TextToSpeech.app/Contents/Info.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>TextToSpeech</string>
+    <key>CFBundleName</key>
+    <string>TextToSpeech</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.local.texttospeech</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+</dict>
+</plist>
+EOF
+```
+
+6. **Launch the app**:
+```bash
+open ~/Applications/TextToSpeech.app
+```
 
 ## Usage
 
 1. Open the app
-2. Paste or type your text
-3. Adjust speed slider (default 1.5x)
-4. Click "Speak"
+2. Paste or type your text in the text box
+3. Adjust speed slider if desired (default 1.2x)
+4. Click "Speak" or press Cmd+Enter
+5. The app will read your text with natural pauses at line breaks
+
+## How It Works
+
+- **Filters** out words >20 characters (URLs, long tokens)
+- **Chunks** text at newlines and every ~200 characters
+- **Generates** audio for each chunk using Kokoro TTS
+- **Plays** chunks sequentially with the next one pre-generated during playback
+
+## Troubleshooting
+
+**"Module not found" error**: Make sure you're using the Python from your virtual environment in the launcher script.
+
+**No sound**: Check that `afplay` works in terminal: `afplay /System/Library/Sounds/Glass.aiff`
+
+**First launch is slow**: The Kokoro model downloads on first run (~100MB). Subsequent launches are fast.
+
+## Tech Stack
+
+- **Kokoro-82M**: Fast, high-quality TTS model
+- **tkinter**: GUI framework
+- **soundfile**: Audio file handling
+- **espeak-ng**: Phoneme processing
 
 ## License
 
